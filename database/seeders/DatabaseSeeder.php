@@ -13,33 +13,50 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Для PostgreSQL використовуємо TRUNCATE з CASCADE
-        DB::statement('TRUNCATE TABLE comments CASCADE');
-        DB::statement('TRUNCATE TABLE tasks CASCADE');
-        DB::statement('TRUNCATE TABLE project_user CASCADE');
-        DB::statement('TRUNCATE TABLE projects CASCADE');
-        DB::statement('TRUNCATE TABLE users CASCADE');
+        // Очищаємо таблиці
+        DB::statement('TRUNCATE TABLE comments, tasks, project_user, projects, users RESTART IDENTITY CASCADE');
 
         // Створюємо 8 користувачів
         $users = User::factory(8)->create();
 
-        // Створюємо 5 проектів
-        $projects = Project::factory(5)->create();
+        // Створюємо 5 проектів, кожен з випадковим власником зі списку користувачів
+        $projects = Project::factory(5)->create([
+            'owner_id' => function() use ($users) {
+                return $users->random()->id;
+            }
+        ]);
 
         // Додаємо користувачів до проектів (3-4 користувачі на проект)
         foreach ($projects as $project) {
             $projectUsers = $users->random(rand(3, 4));
-            foreach ($projectUsers as $user) {
-                $project->users()->attach($user->id, [
-                    'role' => $user->id === $project->owner_id ? 'owner' : 'member'
-                ]);
+            $project->users()->attach($projectUsers, ['role' => 'member']);
+            // Додаємо власника до проекту, якщо його ще немає
+            if (!$project->users->contains($project->owner_id)) {
+                $project->users()->attach($project->owner_id, ['role' => 'owner']);
             }
         }
 
-        // Створюємо 8 задач
-        $tasks = Task::factory(8)->create();
+        // Створюємо 8 задач, використовуючи існуючих користувачів і проекти
+        $tasks = Task::factory(8)->create([
+            'project_id' => function() use ($projects) {
+                return $projects->random()->id;
+            },
+            'author_id' => function() use ($users) {
+                return $users->random()->id;
+            },
+            'assignee_id' => function() use ($users) {
+                return $users->random()->id;
+            }
+        ]);
 
-        // Створюємо 5-8 коментарів
-        Comment::factory(rand(5, 8))->create();
+        // Створюємо 6 коментарів, використовуючи існуючі задачі і користувачів
+        Comment::factory(6)->create([
+            'task_id' => function() use ($tasks) {
+                return $tasks->random()->id;
+            },
+            'author_id' => function() use ($users) {
+                return $users->random()->id;
+            }
+        ]);
     }
 }
