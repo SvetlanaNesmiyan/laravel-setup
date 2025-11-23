@@ -7,19 +7,18 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\Comment;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Очищаємо таблиці
-        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        Comment::truncate();
-        Task::truncate();
-        \DB::table('project_user')->truncate();
-        Project::truncate();
-        User::truncate();
-        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // Для PostgreSQL використовуємо TRUNCATE з CASCADE
+        DB::statement('TRUNCATE TABLE comments CASCADE');
+        DB::statement('TRUNCATE TABLE tasks CASCADE');
+        DB::statement('TRUNCATE TABLE project_user CASCADE');
+        DB::statement('TRUNCATE TABLE projects CASCADE');
+        DB::statement('TRUNCATE TABLE users CASCADE');
 
         // Створюємо 8 користувачів
         $users = User::factory(8)->create();
