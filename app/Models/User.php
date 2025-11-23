@@ -1,5 +1,5 @@
 <?php
-
+// lab1_laravel
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

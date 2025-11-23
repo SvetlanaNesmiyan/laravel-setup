@@ -1,5 +1,5 @@
 <?php
-
+// lab1_laravel
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
