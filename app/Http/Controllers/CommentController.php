@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comment;
-use App\Models\Task;
-use App\Http\Requests\StoreCommentRequest;
-use Illuminate\Http\Response;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class CommentController extends Controller
 {
@@ -14,53 +13,32 @@ class CommentController extends Controller
         $this->middleware('auth:sanctum');
     }
 
-    public function taskComments(Task $task)
+    public function destroy(Request $request, Comment $comment): JsonResponse
     {
-        if (!$task->project->users->contains(auth()->id())) {
-            return response()->json([
-                'message' => 'Access denied'
-            ], Response::HTTP_FORBIDDEN);
-        }
-
-        $comments = $task->comments()->with('author')->get();
-
-        return response()->json([
-            'data' => $comments
-        ]);
-    }
-
-    public function storeInTask(StoreCommentRequest $request, Task $task)
-    {
-        if (!$task->project->users->contains(auth()->id())) {
-            return response()->json([
-                'message' => 'Access denied'
-            ], Response::HTTP_FORBIDDEN);
-        }
-
-        $comment = Comment::create([
-            'task_id' => $task->id,
-            'author_id' => auth()->id(),
-            'body' => $request->body,
-        ]);
-
-        return response()->json([
-            'message' => 'Comment created successfully',
-            'data' => $comment->load('author')
-        ], Response::HTTP_CREATED);
-    }
-
-    public function destroy(Comment $comment)
-    {
-        if ($comment->author_id !== auth()->id()) {
-            return response()->json([
-                'message' => 'Access denied'
-            ], Response::HTTP_FORBIDDEN);
+        if ($comment->author_id !== $request->user()->id) {
+            return response()->json(['message' => 'Заборонено. Тільки автор коментаря може видаляти.'], 403);
         }
 
         $comment->delete();
 
+        return response()->json(['message' => 'Коментар успішно видалено']);
+    }
+
+    public function update(Request $request, Comment $comment): JsonResponse
+    {
+        if ($comment->author_id !== $request->user()->id) {
+            return response()->json(['message' => 'Заборонено. Тільки автор коментаря може оновлювати.'], 403);
+        }
+
+        $request->validate([
+            'body' => 'required|string|min:1|max:1000',
+        ]);
+
+        $comment->update(['body' => $request->body]);
+
         return response()->json([
-            'message' => 'Comment deleted successfully'
+            'message' => 'Коментар успішно оновлено',
+            'comment' => $comment->fresh()->load('author'),
         ]);
     }
 }
