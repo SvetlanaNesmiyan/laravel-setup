@@ -35,4 +35,22 @@ class Task extends Model
     {
         return $this->hasMany(Comment::class);
     }
+
+    protected static function booted()
+    {
+        static::created(function ($task) {
+            event(new \App\Events\TaskCreated($task));
+        });
+
+        static::updated(function ($task) {
+            $oldStatus = $task->getOriginal('status');
+            if ($oldStatus !== $task->status) {
+                event(new \App\Events\TaskUpdated($task, $oldStatus));
+            }
+        });
+
+        static::deleted(function ($task) {
+            event(new \App\Events\TaskDeleted($task));
+        });
+    }
 }

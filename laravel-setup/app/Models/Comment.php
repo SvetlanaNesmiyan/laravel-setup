@@ -21,4 +21,11 @@ class Comment extends Model
     {
         return $this->belongsTo(User::class, 'author_id');
     }
+
+    protected static function booted()
+    {
+        static::created(function ($comment) {
+            event(new \App\Events\CommentCreated($comment));
+        });
+    }
 }
